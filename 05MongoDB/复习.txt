@@ -1,0 +1,190 @@
+1创建
+conn = pymongo.MongoClient('localhost',27017)
+2.得到数据库对象
+db = conn.stu
+3.获取集合对象
+myset = db.class1
+4.增删改查，索引，聚合
+
+
+********************************
+关系型数据库
+
+采用关系模型来组织数据结构的数据库 (二维表)
+
+Oracle  DB2  SQLServer  MySql  SqLite(python标准库支持)
+
+优点: 1.容易理解,类似我们常见的表格
+     2.使用方便,都是使用sql语句,sql语句非常成熟
+     3.数据一致性高,冗余度低,完整性好
+     4.技术成熟,可以使用外部链接等比较负责的操作
+
+缺点: 1.不能很好满足在高并发需求,每次都需要进行sql语句的解析
+     2.针对海量数据的瞬间爆发读写性能不足,关系型数据库内部每
+       一步操作都需要加锁保证操作的原子性
+     3.数据扩展普遍比非关系型困难
+     4.数据一致性高,有时会浪费大量空间
+
+非关系型数据库(NoSql --> Not only Sql)
+优点: 高并发,大数据读写能力强
+     支持分布式,容易扩展
+     弱化了数据结构,降低了数据的一致性
+
+缺点: 通用性差,没有向sql那样一致的操作
+     操作灵活,容易混乱
+     没有join,有的数据库,没有事务支持等操作  #比如说MongoDB
+
+Nosql的使用情况
+
+1.数据库一致性要求低
+2.数据库并发处理要求高
+3.数据库设计时对大小的估算不确定,需要分布扩展
+4.给定的数据比较容易建立起Nosql的模型
+
+Nosql分类:
+1.键值型数据库
+  Redis  oracle  BDB  Tokyo
+2.列存储数据库
+  HBase
+3.文档型数据库
+  MongoDB  CouchDB
+4.图形数据库
+
+
+MongoDB(非关系型 ---> 文档型数据库)
+1.由C++编写的数据库管理系统
+2.支持非常丰富的增删改查数据操作
+3.支持非常丰富的数据类型
+4.使用方便,便与部署,支持分布,容易扩展
+5.支持众多的编程语言接口(python ruby  c++  c#  PHP)
+**********************************
+数据库创建删除: use 数据库名称
+             db.dropDatabase()
+集合的创建和删除: db.createCollection('name')
+               db.collectionName.insert()
+               db.collectionName.drop()  删除
+               db.collectionName.renameCollection() 重命名
+数据库的备份和恢复
+      mongodump (备份)   mongorestore(恢复)
+数据库的监测
+      mongostat    mongotop
+数据库配置
+      mongod --dbpath path --port 8888
+数据的插入: insert()  save()
+
+
+********************
+查找  find(query,field)
+     findOne()
+
+操作符: 比较 $lt  $lte $gt $gte $eq $ne $in $nin
+       逻辑 $and $or $not $nor
+       数组 $all $size
+       其他 $exists $type $mod
+
+查找函数: limit()   skip()  sort()  count()  pretty()
+
+其它函数: distinct()  getCollection()
+
+删除: remove(query,justOne)
+*************************
+修改
+update(query,update,upsert,multi)
+修改器: $set  $unset  $rename  $setOnInsert  $inc  $mul  $min  $max
+             $push  $pushAll  $each  $pull    $pullAll  $position  $pop  $addToSet
+              $sort
+数据类型  Date()   ISODate()   valueOf()
+                null 的使用
+
+Object : 通过 . 取内部文档
+              通过 . 取数组索引
+
+索引创建 ensureIndex()
+聚合操作 aggregate()
+聚合操作符 $group  $match  $project  $limit  $skip  $sort
+
+**********************
+
+存文件到数据库
+方案解释:
+在MongoDB数据库中 创建两个集合 共同完后对文件的存储
+fs.siles : 存储文件的相关信息, 比如 : 文件名  文件类型
+fs.chunks : 实际存储文件内容,以二进制方式分块存储.将大文件分为多个小块,每块占一个空间
+
+mongofiles -d grid put xly.zip
+格式
+mongofiles -d     dbname     put     file
+                             数据库                  文件名
+* 如果数据库不存在则自动创建
+
+db.fs.files.find()
+db.fs.chunks.find()
+
+获取数据库中文件
+mongofiles -d grid get xly.zip
+
+**游标
+为什么使用游标
+1.防止网络拥塞,造成数据传输慢
+2.提高用户解析体验,可以后端解析
+
+var cursor = db.class0.find()    #创建游标
+cursor.hasNext()    #查看是否有下一个数据
+cursor.next()    #获取下一个数据
+
+游标
+为什么使用游标
+1.防止网络拥塞,造成数据传输慢
+2.提高用户解析体验,可以后端解析
+
+var cursor = db.class0.find()    #创建游标
+cursor.hasNext()    #查看是否有下一个数据
+cursor.next()    #获取下一个数据
+
+
+插入数据  insert()   insert_many()  insert_one()
+         save()
+
+删除数据  remove({},multi = True)
+multi  默认为True  表示删除所有符合条件的数据
+       设置为False 表示只删除一条
+
+数据查找
+find()
+功能: 查找数据库内容
+参数: 同 mongo shell find()
+返回值: 返回一个游标---> 迭代器
+
+cursor  可迭代对象
+
+next()
+count()
+limit()
+skip()
+sort()
+mongoshell --->  sort({'name':1})
+pymongo ---> sort([('name',1)])
+* 进行排序时游标要确保没有被访问过
+
+find_one()
+返回值是一个字典
+修改
+update()
+update_many()    :匹配到多个文档时全部修改
+update_one()    :只修改匹配到的第一条文档
+* 编程中mongo的数据类型null 可以用python中的 None代替
+
+**索引
+
+创建索引
+ensure_index()
+create_index()
+create_indexes()    :创建多个索引
+查看集合中的索引
+list_indexes()
+删除索引
+drop_index()    :删除某一个索引
+drop_indexes()  :删除所有索引
+聚合操作
+aggregate([])
+

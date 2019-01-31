@@ -1,0 +1,38 @@
+1.MongoDB区分大小写
+2.MongoDB名字都是小驼峰
+3.插入多条文档
+db.collectionName.insert([{},{},{}])
+* save无法一次插入多个文档
+save可以修改 insert可以插入多个文档
+4.菲关系型数据库为了解决非并发情况	
+5.版本更新导致语法函数的并用
+6.如果有的文档没有你的查找的域 大于小于找不到
+  但是在不等于里面有  把这个当做UNnone   比如说没有年龄
+7.如果query不填只想写{_id：0}需要在前面补一个{}
+8.先写好括号再往里面填
+9.id前面记得写_
+10.db.class1.find({age:{$not:{$gt:15}}},{_id:0})
+会把小于等于15的和不存在age域的都打出来
+{ "name" : "松哥", "age" : 15, "sex" : "w" }
+{ "name" : "阿栓" }
+11.$not 不是
+$nor 既不也不  
+$nor 既不也不  (表示列表集合中的条件都不具备)
+   db.class0.find({$nor:[{age:{$gt:18}},{sex:'m'}]},{_id:0})
+这个非常容易出错
+12.$all  $in 再看看
+13.
+$not 后边只能跟一个条件  其他的可以跟几个条件
+14.
+update可以增加一个域的功能
+15.查找内部文档的时候要加引号
+find({'book2.title':'python Web'},{_id:0})
+修改内部文档需要用外部文档.内部文档域名来修改
+16.find({'score.0':98},{_id:0}) 下角标索引页需要引号
+17.c,c++列表数据结构是顺序结构 python列表是链表结构
+18.pymongo 里面remove（query，multi = True）
+默认是True  默认删除多条   mongo shell里面也是删除多条但是是justone = False   意思一样但是表达不同
+
+19.getIndex 注意小驼峰第二个单词大写
+20.data = myset.find_one({'filename':'file.jpg'})
+直接获取的就是一个字典 用这个find_one  否则用find获取的是一个游标

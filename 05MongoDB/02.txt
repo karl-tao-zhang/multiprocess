@@ -1,0 +1,359 @@
+前情回顾
+
+复习:
+数据库创建删除: use 数据库名称
+             db.dropDatabase()
+集合的创建和删除: db.createCollection('name')
+               db.collectionName.insert()
+               db.collectionName.drop()  删除
+               db.collectionName.renameCollection() 重命名 
+小驼峰命名
+数据库的备份和恢复
+      mongodump (备份)   mongorestore(恢复)
+数据库的监测
+      mongostat    mongotop
+数据库配置
+      mongod --dbpath path --port 8888
+数据的插入: insert()  save()
+
+*********************************************************
+
+day02 笔记
+db.collectionName  集合对象
+获取集合对象: db.getCollection('collection_name')
+      示例: db.getCollection('class0').insert({name:'悟空',age:1700})
+
+查找操作
+db.collectionName.find() 相当于MySQL select * from tableName
+
+find(query,field)
+功能: 查找所有符合条件的文档
+参数: query : 筛选条件  相当于where子句
+     field : 展示的域  相当于select的展示部分
+返回: 返回所有查找到的内容
+
+field 参数:选择要展示的域  传一组键值对
+
+键表示域名
+值表示是否显示该域: 0 表示不显示 1 表示显示
+
+* 如果某个域给定0 则表示不显示该域,而其它的域均显示
+  如果某个域给定1 则表示显示该域,而其他的域都不显示
+* _id 永远默认为显示,除非设置为0
+* 除_id外其他域 必须拥有相同的设置,全为0或者全为1
+* 如果不写该参数则表示显示所有域内容
+
+示例:    db.class0.find({},{_id:0,name:1,age:1})
+
+query: 以键值对的方式给出查找条件
+查找年龄为 17
+示例:    db.class0.find({age:17},{_id:0})
+* 如果不写第一个参数则表示查找所有内容
+
+
+findOne()
+功能参数和find()完全相同,只是只返回第一条查找到的文档
+
+query的更多用法
+
+操作符: 使用$符号注明的一个特殊字符串,表示一定的含义
+例如:   $lt 表示 小于
+
+比较操作符
+
+$eq    等于
+   db.class0.find({age:{$eq:17}},{_id:0})
+   筛选年龄等于17的
+   db.class0.find({age:17},{_id:0})
+
+$lt    小于
+   db.class0.find({name:{$lt:'阿叼'}},{_id:0})
+   * mongo中字符串也可以比较大小
+
+$lte 小于等于 <=
+   db.class0.find({age:{$lte:17}},{_id:0})
+
+$gt  大于 >
+   db.class0.find({age:{$gt:17}},{_id:0})
+
+$gte 大于等于 >=
+   db.class0.find({age:{$gte:17}},{_id:0})
+
+$ne  不等于 !=
+   db.class0.find({age:{$ne:17}},{_id:0})
+   * 如果一个文档没有这个age域则显示为不等于
+
+$in  包含
+   db.class0.find({age:{$in:[16,17,18]}},{_id:0})
+
+$nin  不包含
+   db.class0.find({age:{$nin:[16,17,18]}},{_id:0})
+
+逻辑操作符
+$and  逻辑与
+
+年龄大于19 并且 性别为男
+   db.class0.find({age:{$lt:19},sex:'m'},{_id:0})
+年龄小于19 并且 大于15
+   db.class0.find({age:{$lt:19,$gt:15}},{_id:0})
+
+
+   db.class0.find({$and:[{age:17},{name:'Lei'}]})
+
+
+$or   逻辑或
+   db.class0.find({$or:[{age:{$lt:22}},{name:'悟空'}]},{_id:0})
+   db.class0.find({$or:[{age:{$lt:18}},{age:{$gt:25}}]},{_id:0})
+
+$not  逻辑非
+   db.class0.find({age:{$not:{$eq:17}}},{_id:0})
+
+$nor 既不也不  (表示列表集合中的条件都不具备)
+   db.class0.find({$nor:[{age:{$gt:18}},{sex:'m'}]},{_id:0})
+
+
+条件混合
+
+(年龄小于20  或者姓名为Lily) 并且性别为女的人
+db.class0.find({$and:[{$or:[{age:{$lt:30}},{name:'阿叼'}]},{sex:'m'}]},{_id:0})  错误
+db.class0.find({$and:[{$or:[{age:{$lt:20}},{name:'Lily'}]},{sex:'w'}]},{_id:0})  正确
+
+年龄小于等于17,或者 (并且年龄大于100,名字大于Tom的)
+db.class0.find({$or:[{$and:[{age:{$lte:17}},{age:{$gt:100}}]},{name:{$gt:'Tom'}}]},{_id:0})
+年龄小于等于17,或者 (并且名字大于Tom的,年龄大于100的)
+db.class0.find({$or:[{$and:[{age:{$lte:17}},{name:{$gt:'Tom'}}]},{age:{$gt:100}}]},{_id:0})
+
+
+数组查找:
+
+查看数组中包含某一项的
+db.class1.find({hobby:'吃'},{_id:0})
+
+$all
+查找一个数组中同时包含多项的文档
+db.class1.find({hobby:{$all:['拍电影','代言']}},{_id:0})
+查找hobby数组中既有拍电影又有代言的文档
+
+$size
+查找数组元素个数为指定个数的的文档
+db.class1.find({hobby:{$size:3}},{_id:0})
+查找hobby数组中包含三项的文档
+
+
+数组切片显示
+
+$slice    #对数组切片显示
+db.class1.find({hobby:{$size:3}},{_id:0,hobby:{$slice:2}})
+显示数组的前两项
+
+db.class1.find({hobby:{$size:3}},{_id:0,hobby:{$slice:[1,2]}})
+跳过第一项,显示后面两项
+
+
+其他查找方法
+
+$exists    #判断一个域是否存在
+
+查找存在sex域的文档
+db.class0.find({sex:{$exists:true}},{_id:0})
+查找不存在的sex域文档
+db.class0.find({sex:{$exists:false}},{_id:0})
+
+$mod
+做除数余数查找
+
+查找年龄 被2除余1的文档
+db.class0.find({age:{$mod:[2,1]}},{_id:0})
+
+$type
+查找制定数据类型的文档
+
+查找hobby中包含数据类型为 2 的数据的文档
+> db.class1.find({hobby:{$type:2}},{_id:0})
+
+数据类型对照:
+https://docs.mongodb.com/manual/reference/operator/query/type/ 这个在网上有每个数字的对应的类型！！
+
+**************************************************************
+
+进一步的信息筛选
+
+distinct()
+功能: 查看一个集合中某个域值的覆盖范围
+查看集合中age域的值都有哪些
+db.class0.distinct('age')
+
+pretty()
+功能: 将查询结果格式化显示
+db.class0.find().pretty()
+
+limit()
+功能: 查询结果显示前 n条
+db.class0.find({},{_id:0}).limit(3)  #查询结果显示前 3 个
+
+skip(n)
+功能: 显示时跳过前 n 条
+显示时跳过前三条
+db.class0.find({},{_id:0}).skip(3)
+
+count()
+功能: 对查找结果计数统计
+统计sex为 m 的文档数量
+db.class0.find({sex:'m'},{_id:0}).count()
+
+sort({键:1/-1})
+功能: 对查找结果排序  #1 表示按照升序排列, -1 表示按照降序排列
+对查找结果按照年龄进行升序排序
+db.class0.find({age:{$exists:true}},{_id:0}).sort({age:1})
+
+复合排序: 当第一排序项相同的时候,按照第二排序项排序
+
+db.class0.find({age:{$exists:true}},{_id:0}).sort({age:1,name:-1})
+
+
+
+函数的连续使用
+获取集合中年龄最小的三个文档
+db.class0.find({},{_id:0}).sort({age:1}).limit(3)
+
+db.class0.find({age:{$exists:true}},{_id:0}).sort({age:1}).limit(3)
+
+删除文档
+db.collectionName.remove(query,justOne)
+功能: 删除指定的文档
+参数: query : 筛选要删除的文档, 类似where子句
+             用法同 查找操作
+     justOne : 布尔值 默认为 False 表示删除所有筛选数据
+              如果赋值为true 则表示只删除第一符合的文档
+
+删除年龄为空与大于100的符合条件的文档
+db.class0.remove({$or:[{age:{$exists:false}},{age:{$gt:100}}]})
+
+删除第一个符合条件的文档
+db.class0.remove({sex:{$exists:false}},true)
+
+删除集合中所有文档
+db.class0.remove({})
+
+练习:
+1.创建一个数据库 名字grade
+  use grade
+2.数据库中创建一个集合 名字 class
+  db.createCollection('class')
+3.集合中插入若干数据 文档格式如下
+{name:'zhang',age:10,sex:'m',hobby:['a','b','c']}
+hobby: draw sing  dance  basketball  football  pingpong
+       computer
+
+db.class.insert({_id:1,name:'阿斗',age:6,sex:'m',hobby:['draw','football','dance',]})
+
+db.class.insert({_id:2,name:'吕布',age:8,sex:'m',hobby:['draw','sing','football',]})
+
+db.class.insert({_id:3,name:'小乔',age:9,sex:'m',hobby:['draw','football','dance',]})
+
+db.class.insert({_id:4,name:'张三',age:10,sex:'m',hobby:['draw','sing','dance',]})
+
+db.class.insert({_id:5,name:'李四',age:15,sex:'m',hobby:['draw','sing','football']})
+
+db.class.insert({_id:6,name:'曹操',age:31,sex:'m',hobby:['draw','sing','dance']})
+
+db.class.insert({_id:7,name:'诸葛',age:32,sex:'m',hobby:['basketball','football','pingpong','computer']})
+
+db.class.insert({_id:8,name:'关羽',age:33,sex:'m',hobby:['football','pingpong','computer']})
+
+db.class.insert({_id:9,name:'张飞',age:34,sex:'m',hobby:['basketball','pingpong','computer']})
+
+db.class.insert({_id:10,name:'刘备',age:35,sex:'m',hobby:['draw','sing','basketball','pingpong','computer']})
+
+db.class.insert({_id:11,name:'赵云',age:30,sex:'m',hobby:['draw','sing','basketball','computer']})
+
+
+4.查找练习
+查看班级所有人信息
+db.class.find()
+查看班级中年龄为8岁的学生信息
+db.class.find({age:8})
+查看年龄大于10岁的学生信息
+db.class.find({age:{$gt:10}})
+查看年龄在 4---8岁之间的学生信息
+db.class.find({age:{$gte:4,$lte:8}})
+
+找到年龄为6岁且为男生的信息
+db.class.find({age:6,sex:'m'})
+找到年龄小于7岁或者大于10岁的学生
+db.class.find({$or:[{age:{$lt:7},age:{$gt:10}}]})
+找到年龄是8岁或者11岁的学生
+db.class.find({age:{$in:[8,11]}})
+
+找到兴趣爱好有两项的学生
+db.class.find({hobby:{$size:2}})
+找到兴趣爱好有draw的学生
+db.class.find({hobby:'draw'})
+找到既喜欢画画有喜欢跳舞的学生
+db.class.find({hobby:{$all:['draw','dance']}})
+
+统计爱好有三项的学生人数
+db.class.find({hobby:{$size:3}}).count()
+找出本班年龄第二大的学生
+db.class.find().sort({age:-1}).skip(1).limit(1)
+查看学生的兴趣范围
+db.class.distinct('hobby')
+将学生按年龄排序找到年龄最大的三个
+db.class.find().sort({age:-1}).limit(3)
+删除所有 年级大于12或者小于4岁的学生
+db.class.remove({$or:[{age:{$gt:12}},{age:{$lt:4}}]})
+
+
+作业 : 复习 数据的查找 和删除操作
+      mongo练习
+
+db.class1.insert([{ "name" : "松哥", "age" : 15, "sex" : "w" },{ "name" : "隔壁老王", "age" : 20, "sex" : "w" },{ "name" : "阿叼", "age" : 28 },{ "name" : "阿红", "age" : 20 },{ "name" : "阿彪", "age" : 23 },{ "name" : "Tom", "age" : 16, "sex" : "m" }
+{ "name" : "Lei", "age" : 17, "sex" : "m" },{ "name" : "八戒", "age" : 17, "sex" : "m" },{ "name" : "阿刁", "age" : 27 }
+{ "name" : "悟空", "age" : 1700},{ "name" : "阿栓" },{ "name" : "Lily", "age" : 16, "sex" : "m" }])
+
+> db.class0.find({},{_id:0})
+db.class2.insert({"_id":1,"name" : "Draven", "age" : 15, "sex" : "w" })
+db.class2.insert({"_id":2,"name" : "Karl", "age" : 20, "sex" : "w" })
+db.class2.insert({"_id":3,"name" : "Charles", "age" : 28 })
+db.class2.insert({"_id":4,"name" : "Lucy", "age" : 20 })
+db.class2.insert({"_id":5,"name" : "James", "age" : 23 })
+db.class2.insert({"_id":6,"name" : "Tom", "age" : 16, "sex" : "m" })
+db.class2.insert({"_id":7,"name" : "Lei", "age" : 17, "sex" : "m" })
+db.class2.insert({"_id":8,"name" : "Merry", "age" : 17, "sex" : "m" })
+db.class2.insert({"_id":9,"name" : "Linda", "age" : 27 })
+db.class2.insert({"_id":10,"name" : "Adom", "age" : 1700 })
+db.class2.insert({"_id":11,"name" : "Eve" })
+db.class2.insert({"_id":12,"name" : "Lily", "age" : 16, "sex" : "m" })
+> db.class0.find({_id:{$type:7}},{_id:0})
+{ "name" : "松哥", "age" : 15, "sex" : "w" }
+{ "name" : "隔壁老王", "age" : 20, "sex" : "w" }
+{ "name" : "阿叼", "age" : 28 }
+{ "name" : "阿红", "age" : 20 }
+{ "name" : "阿彪", "age" : 23 }
+{ "name" : "Lei", "age" : 17, "sex" : "m" }
+{ "name" : "阿刁", "age" : 27 }
+{ "name" : "悟空", "age" : 1700 }
+{ "name" : "阿栓" }
+{ "name" : "Lily", "age" : 16, "sex" : "m" }
+
+
+
+db.class2.insert({"_id":1,"name" : "Draven", "age" : 15, "sex" : "w" })
+db.class2.insert({"_id":2,"name" : "Karl", "age" : 20, "sex" : "w" })
+db.class2.insert({"_id":3,"name" : "Charles", "age" : 28 })
+db.class2.insert({"_id":4,"name" : "Lucy", "age" : 20 })
+db.class2.insert({"_id":5,"name" : "James", "age" : 23 })
+db.class2.insert({"_id":6,"name" : "Tom", "age" : 16, "sex" : "m" })
+db.class2.insert({"_id":7,"name" : "Lei", "age" : 17, "sex" : "m" })
+db.class2.insert({"_id":8,"name" : "Merry", "age" : 17, "sex" : "m" })
+db.class2.insert({"_id":9,"name" : "Linda", "age" : 27 })
+db.class2.insert({"_id":10,"name" : "Adom", "age" : 1700 })
+db.class2.insert({"_id":11,"name" : "Eve" })
+db.class2.insert({"_id":12,"name" : "Lily", "age" : 16, "sex" : "m" })
+
+
+
+
+db.class3.insert({"_id":1,"name" : "Draven", "age" : 15, "sex" : "w" ,score:[98,67,86]})
+db.class3.insert({"_id":2,"name" : "Karl", "age" : 20, "sex" : "w" ,score:[65,45,24]})
+db.class3.insert({"_id":3,"name" : "Charles", "age" : 28 ,score:[76,36,91]})

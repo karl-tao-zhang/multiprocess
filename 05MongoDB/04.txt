@@ -1,0 +1,166 @@
+day04
+前情回顾
+修改
+update(query,update,upsert,multi)
+修改器: $set  $unset  $rename  $setOnInsert  $inc  $mul  $min  $max
+             $push  $pushAll  $each  $pull    $pullAll  $position  $pop  $addToSet
+              $sort
+数据类型  Date()   ISODate()   valueOf()
+                null 的使用
+
+Object : 通过 . 取内部文档
+              通过 . 取数组索引
+
+索引创建 ensureIndex()
+聚合操作 aggregate()
+聚合操作符 $group  $match  $project  $limit  $skip  $sort
+
+day04 笔记
+
+固定集合
+MongoDB中可以创建大小固定的集合,称之为固定集合,固定集合的性能出色,适用于很多场景
+比如: 日志处理,  临时缓存
+
+特点: 插入速度快
+         顺序查询速度快
+         能够淘汰早期数据
+         可以控制集合空间
+创建:
+db.createCollection(collectionName,{capped:true,size:10000,max:1000})
+size : 设置固定集合的大小  kb
+max: 最多能容纳多少文档
+
+示例:
+创建一个最多包含三条文档的集合
+db.createCollection('log',{capped:true,size:10,max:3})
+
+文件存储
+数据库存储文件的方式
+1.在数据库中以字符串的方式存储文件在本地的路径
+优点 : 节省数据库空间
+缺点 : 当数据库或者文件位置发生变化即需要相应修改数据库内容
+
+2.将文件以二进制数据的方式存放在数据库里
+
+优点 : 文件存入数据库,数据库在,文件既不会丢失
+缺点 : 当文件较大时,数据库空间占用大,提取困难
+Mongo中   使用 GridFS 方法 进行大文件存储
+
+GridFS : 是MongoDB中大文件存储的一种方案,Mongo中认为大于16M的文件为大文件
+
+方案解释:
+在MongoDB数据库中 创建两个集合 共同完后对文件的存储
+fs.siles : 存储文件的相关信息, 比如 : 文件名  文件类型
+fs.chunks : 实际存储文件内容,以二进制方式分块存储.将大文件分为多个小块,每块占一个空间
+
+mongofiles -d grid put xly.zip
+格式
+mongofiles -d     dbname     put     file
+                             数据库                  文件名
+* 如果数据库不存在则自动创建
+
+db.fs.files.find()
+db.fs.chunks.find()
+
+获取数据库中文件
+mongofiles -d grid get xly.zip
+
+优缺点:
+优点 : 存储方便,方便数据库移植,对文件个数没有太多限制
+缺点 : 读写效率低 
+
+游标
+为什么使用游标
+1.防止网络拥塞,造成数据传输慢
+2.提高用户解析体验,可以后端解析
+
+var cursor = db.class0.find()    #创建游标
+cursor.hasNext()    #查看是否有下一个数据
+cursor.next()    #获取下一个数据
+
+通过Python 操作MongoDB数据库
+
+Python --->  mongodb编程接口  pymongo
+
+安装
+sudo  pip3  install  pymongo
+
+操作步骤
+1.创建mongo数据库的连接对象
+conn = mongoClient('localhost',27017)
+2.生成数据库对象
+db = conn.stu
+3.生成集合对象
+my_set = db.class0
+4.增删改查索引聚合操作
+
+插入数据  insert()   insert_many()  insert_one()
+         save()
+
+删除数据  remove({},multi = True)
+multi  默认为True  表示删除所有符合条件的数据
+       设置为False 表示只删除一条
+
+数据查找
+find()
+功能: 查找数据库内容
+参数: 同 mongo shell find()
+返回值: 返回一个游标---> 迭代器
+
+cursor  可迭代对象
+
+next()
+count()
+limit()
+skip()
+sort()
+mongoshell --->  sort({'name':1})
+pymongo ---> sort([('name',1)])
+* 进行排序时游标要确保没有被访问过
+
+find_one()
+返回值是一个字典
+
+修改操作
+
+update()
+参数和mongoshell相同
+
+
+
+update_many()    :匹配到多个文档时全部修改
+update_one()    :只修改匹配到的第一条文档
+* 编程中mongo的数据类型null 可以用python中的 None代替
+
+索引
+
+创建索引
+ensure_index()
+create_index()
+create_indexes()    :创建多个索引
+
+查看集合中的索引
+list_indexes()
+
+
+删除索引
+drop_index()    :删除某一个索引
+drop_indexes()  :删除所有索引
+
+聚合操作
+aggregate([])
+参数: 与mongoshell中聚合参数写法一直
+返回值: 迭代器 同find的返回值
+
+
+
+GridFS程序提取
+
+import gridfs
+
+gridfs.GridFS(db)
+
+
+
+插入二进制格式数据
+import bson.binary

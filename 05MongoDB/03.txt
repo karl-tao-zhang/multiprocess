@@ -1,0 +1,405 @@
+前情回顾
+查找  find(query,field)
+     findOne()
+
+操作符: 比较 $lt  $lte $gt $gte $eq $ne $in $nin
+       逻辑 $and $or $not $nor
+       数组 $all $size
+       其他 $exists $type $mod
+
+查找函数: limit()   skip()  sort()  couunt()  pretty()
+
+其它函数: distinct()  getCollection()
+
+删除: remove(query,justOne)
+
+
+
+day03 笔记
+
+修改数据
+MySQL是update tableName set ... where ...
+
+db.collectionName.update(query,update,upsert,multi)
+功能: 修改一个文档
+参数: query : 筛选要修改的文档 相当于where子句 用法同查找
+
+     update : 将数据更新为什么内容 相当于set操作 需要使用是修改器操作符
+
+     upsert : bool值 默认为false 表示如果query的文档
+              不存在则无法修改;
+              如果设置为 true 表示如果query的文档不存在
+              则根据query和update参数插入新的文档
+
+     multi : bool值 默认为false 如果有多条符合筛选条件
+             的文档则只修改第一条;
+             如果设置为 true 则修改所有符合条件的文档
+
+
+将阿红年龄改为24
+db.class0.update({name:'阿红'},{$set:{age:24}})
+如果筛选数据不存在则插入一个新的文档
+db.class0.update({name:'阿花'},{$set:{age:18,sex:'w'}},true)
+
+db.class0.update({sex:'w'},{$set:{age:20}},false,false)
+可以同时修改多条匹配到的文档
+db.class0.update({sex:'w'},{$set:{age:20}},false,true)
+
+
+修改器操作符
+
+$set  功能: 修改一个域的值
+增加一个域
+db.class0.update({name:'阿红'},{$set:{sex:'w'}})
+
+
+$unset  功能: 删除一个域
+删除文档的sex和age域 (后面数字习惯写1,0 都表示删除)
+db.class0.update({name:'八戒'},{$unset:{sex:0,age:0}})
+
+
+$rename  功能: 修改一个域的名称
+修改所有的sex域为gender
+db.class0.update({},{$rename:{sex:'gender'}},false,true)
+
+
+$setOnInsert  功能: 如果update操作插入新的文档,则补充插入内容
+db.class0.update({name:'阿华'},{$set:{age:21},$setOnInsert:{sex:'m',tel:'123456'}},true)
+
+
+$inc  功能: 加减修改器
+年龄减2
+db.class0.update({age:{$lt:18}},{$inc:{age:-2}},false,true)
+* $inc  可加正数 负数 小数 都可以 
+
+
+$mul  功能: 乘法修改器
+db.class0.update({name:'阿华'},{$mul:{age:-0.5}})
+* $mul 可乘以正数 负数 小数都可以
+
+$min  功能: 设定最小值: 如果筛选的文档指定的域值小于min值则不修改,如果大于min值则改为min值
+db.class0.update({},{$min:{age:19}},false,true)
+
+$max  功能: 设置最大值: 如果筛选的文档指定值至于大于max值则不变,如果小于max值则修改为max值
+db.class0.update({},{$max:{age:18}},false,true)
+
+数组修改器
+$pash  功能:向数组中添加一项
+db.class1.update({name:'Abby'},{$push:{score:30}})
+
+$pushAll 功能: 向数组中添加多项
+db.class1.update({name:'Jame'},{$pushAll:{score:[10,20]}})
+
+$each  功能:逐个操作
+利用each添加多项
+db.class1.update({name:'Lily'},{$push:{score:{$each:[10,5]}}})
+
+$position  功能:选择数组位置进行操作,必须和each合用
+db.class1.update({name:'Lucy'},{$push:{score:{$each:[10,10],$position:1}}})
+
+$sort 功能: 对数组进行排序 必须和each合用
+sort: 1 :升序   -1 :降序
+db.class1.update({name:'Lily'},{$push:{score:{$each:[],$sort:1}}})
+
+$pull  功能: 从数组中删除一个元素
+db.class1.update({name:'Lily'},{$pull:{score:5}})
+
+$pullAll  功能: 从数组中删除多个元素
+db.class1.update({name:'Jame'},{$pullAll:{score:[10,20]}})
+
+$pop  功能: 弹出数组中的一项  
+* -1表示弹出数组中的第一项 1表示弹出最后一项
+db.class1.update({name:'Lily'},{$pop:{score:-1}})
+
+$addToSet  功能: 向数组中插入一个元素但是该元素不能和其他元素重复
+如果已经存在66则无法插入,如果不存在则插入66
+db.class1.update({name:'Lily'},{$addToSet:{score:66}})
+
+数据类型补充
+
+时间类型 mongo中存储时间的格式 : ISODate
+方法1  自动生成当前时间
+db.class2.insert({title:'python入门',date:new Date()})
+
+#方法2 生成当前时间
+db.class2.insert({title:'python精通',date:ISODate()})
+
+#方法3 将生成的时间变为字符串存储
+db.class2.insert({title:'python AI',date:Date()})
+
+指定时间转换
+ISOData()
+功能: 生成mongo事件类型
+参数: 如果不加采纳数则生成当前时间
+     参数格式    "2018-11-11 11:11:11"
+               "20180101 11:11:11"
+               "20181102"
+
+db.class2.insert({title:'python 爬虫',date:ISODate("20180101 11:11:11")})
+
+时间戳获取
+db.class2.insert({title:'python 爬虫',date:ISODate().valueOf()})
+
+null
+1.如果某个域存在却没有值,可以设置为null
+db.class2.insert({title:'python 秘籍',price:null})
+2.表示某个域不存在可以通过null进行匹配
+db.class2.find({date:null},{_id:0})
+可以查找到date不存在的文档
+
+Object类型 (值是一个文档)
+
+db.class2.insert({title:'Python 数据',author:'张三',publication:
+{price:46.8,publication_data:'2017-1-1',publisher:'人民教育'}})
+
+db.class2.insert({title:'Python 运维',author:'李四',publication:
+{price:40.5,publication_data:'2017-6-1',publisher:'机械工业'}})
+
+* 当使用外层文档引用内部文档的时候可以用 . 的方法引用
+  在使用时需要加上引号
+db.class2.find({'publication.publisher':'人民教育'},{_id:0})
+
+修改
+db.class2.update({title:'Python 数据'},{$set:{'publication.price':58.8}})
+
+
+数组的下标引用
+使用一个数组时,可以使用 . 序列下标 的方式使用数组具体的某一项.同样需要用引号
+
+db.class1.update({name:'Lily'},{$set:{'score.0':60}})
+
+db.class1.find({'score.0':{$gt:90}})
+
+文档查找结果的有序性
+可以通过中括号 [] 取查找结果的某一项
+db.class1.find({},{_id:0})[0]
+
+练习:
+使用之前的grade数据库
+1.将小红的年龄变为8岁 兴趣爱好变为 跳舞 画画
+db.class.update({name:'小红'},{$set:{age:8,hobby:['draw','dance']}})
+
+2.追加小明兴趣爱好 唱歌
+db.class.update({name:'小明'},{$push:{hobby:'sing'}})
+
+3.小王兴趣爱好增加 吹牛 打篮球
+db.class.update({name:'小王'},{$pushAll:{hobby:['吹牛','basketball']}})
+
+4.小李增加爱好, 跑步和唱歌,但是不要和以前的重复
+db.class.update({name:'小李'},{$addToSet:{hobby:{$each:['running','sing']}}})
+
+5.该班所有同学年龄加1
+db.class.update({},{$inc:{age:1}},false,true)
+
+6.删除小明的sex属性
+db.class.update({name:'小明'},{$unset:{sex:0}})
+
+7.删除小李兴趣中的第一项
+db.class.update({name:'小李'},{pop:{hobby:-1}})
+
+8.将小红兴趣中的画画爱好删除
+db.class.update({name:'小红'},{$pull:{hobby:'draw'}})
+
+
+索引
+
+指的是建立指定键值及所在文档中存储位置的对照清单.使用索引可以方便我们进行快速查找,
+减少便利次数,提高查找效率
+
+mongo中如何创建索引
+
+ensureIndex()
+功能: 创建索引
+参数: 索引类别,索引选项
+
+db.class0.ensureIndex({name:1})
+
+* 1表示为该域创建正向索引,-1表示逆向索引
+* _id 域会自动创建索引
+
+查看一个集合中的索引
+db.class0.getIndexes()
+
+删除索引
+dropIndes()
+功能： 删除索引
+参数： 删除索引的名称
+
+可以通过索引名称或者索引键值对删除
+db.class0.dropIndex('name_1')
+db.class0.dropIndex({name:1})
+
+dropIndexes()
+功能: 删除所有索引
+
+db.class0.dropIndexes()
+db.class0.getIndexes()
+
+索引类型
+
+复合索引
+根据多个域创建一个索引
+db.class0.ensureIndes({name:1,age:-1})
+
+数组索引
+如果对某个数组域创建索引,那么表示对数组中的每个值均创建了索引,通过数组中单个值查询,也是索引查询
+db.class1.find({},{_id:0})
+db.class1.ensureIndex({'score':1})
+
+子文档索引
+如果对一个域创建索引，值是一个文档则子文档也会同时形成索引
+
+如果对子文档某一个域进行索引创建，则只有通过子文档中的该域查找时为索引查找
+
+db.class2.ensureIndex({'publication':1})
+
+db.class2.find({'publication.pulisher':1})
+
+覆盖索引
+查找时值获取索引项的内容,而不必去获取原数据中的其他内容,这样就不去连接原来的数据直接返回即可
+
+name为索引项,显示也只要name域
+db.class0.find({name:'Lily'},{_id:0,name:1})
+
+唯一索引
+
+创建索引时希望索引域的值均不相同，也可以据此限制一个
+db.class0.ensureIndex({age:1},{'unique':true})
+db.class0.ensureIndex({name:1},{'unique':true})
+
+* 当对某个域创建了唯一索引后,既不允许在插入相同的值的文档
+
+稀疏索引(间隙索引)
+只针对有指定域的文档创建索引表,没有该域的文档,不会插入到索引表中
+db.class2.ensureIndex({'date':1},{sparse:true})
+
+索引约束
+1.影响数据的插入,删除,修改操作.当数据发生改变时,索引表必须同步更新
+2.索引也是需要占用一定的空间资源
+综上:当数据大量的操作是插入,修改,删除操作,而非查询操作时,不适合创建索引。
+数据量比较小时,考虑到空间成本也不适合创建索引.几时适合创建索引的情况,也不是索引越多越好
+
+聚合
+多数据文档进行整理统计 
+db.collectionName.aggregate()
+功能 ： 聚合函数，配合聚合条件进行数据整理统计
+参数 ： 聚合条件  
+
+聚合操作符
+
+$group  分组  和分组操作符配合使用确定按什么分组
+++++++++++++++++++++++++++++++++++
+分组操作符 （和$group配合）
+
+$sum 求和
+
+统计每组个数
+db.class0.aggregate({$group:{_id:'$gender',num:{$sum:1}}})
+          聚合       分组    按gender分组  统计结果名
+
+统计每组年龄和
+db.class0.aggregate({$group:{_id:'$gender',num:{$sum:'$age'}}})
+
+$avg  求平均数
+
+求平均年龄
+db.class0.aggregate({$group:{_id:'$gender',num:{$avg:'$age'}}})
+
+$min  求最小值
+
+求每组姓名的最小值
+db.class0.aggregate({$group:{_id:'$gender',name:{$min:'$name'}}})
+
+$max
+求每组姓名的最大值
+db.class0.aggregate({$group:{_id:'$gender',name:{$max:'$name'}}})
+
+$first 
+返回每组第一个文档指定域值
+db.class0.aggregate({$group:{_id:'$gender',name:{$first:'$name'}}})
+
+$last
+返回每组最后一个文档指定域值
+db.class0.aggregate({$group:{_id:'$gender',name:{$last:'$name'}}})
++++++++++++++++++++++++++++++++++++
+
+$project 
+用于修饰文档的显示结构
+
+e.g.
+db.class0.aggregate({$project:{_id:0,name:1,age:1}})
+e.g.
+db.class0.aggregate({$project:{_id:0,Name:'$name',Age:'$age'}})
+
+$match  过滤数据
+操作符的值同find的query
+db.class0.aggregate({$match:{name:{$gt:'Tom'}}})
+
+$skip 跳过前几条文档
+db.class0.aggregate({$skip:2})
+
+$limit  显示几条文档
+db.class0.aggregate({$limit:2})
+
+$sort  排序
+ db.class0.aggregate({$sort:{name:1}})
+
+聚合管道
+将前一个聚合操作的结果给下一个聚合操作继续执行
+db.collectionName.aggregate([聚合1,聚合2,.....])
+
+e.g.   match---> project ---> sort
+ db.class0.aggregate([{$match:{name:{$gt:'Tom'}}},{$project:{_id:0,name:1,age:1}},{$sort:{name:-1}}])
+
+e.g.  group ---> match
+db.class0.aggregate([{$group:{_id:'$gender',num:{$sum:1}}},{$match:{$nor:[{_id:'m'},{_id:'w'}]}}])
+
+
+作业练习 :
+使用之前的grade数据库
+增加分数域 score:{'chinese':88,'english':78,'math':98}
+1. 按照性别分组统计每组人数
+db.class3.insert({_id:0,name:'嬴政',age:30,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:1,name:'曹操',age:35,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:2,name:'董卓',age:38,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:3,name:'吕布',age:30,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:4,name:'貂蝉',age:28,sex:'w',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:5,name:'刘备',age:27,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:6,name:'小乔',age:26,sex:'w',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:7,name:'刘备',age:25,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:8,name:'关羽',age:25,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+db.class3.insert({_id:9,name:'张飞',age:25,sex:'m',score:{'chinese':88,'english':78,'math':98}})
+
+db.class3.aggregate({$group:{_id:'$sex',num:{$sum:1}}})
+2. 按照姓名分组，过滤出有重名的同学
+db.class0.aggregate({$group:{_id:'$name':{$match:{name:{$gt:'刘备'}}})
+3. 统计每名男生的语文成绩
+
+4. 将女生按照英语分数降序排列
+
+
+
+
+
+************************************************************************************************
+{ "name" : "隔壁老王", "age" : 20, "sex" : "w" }
+{ "name" : "阿红", "age" : 18 }
+{ "name" : "阿彪", "age" : 23 }
+{ "name" : "Tom", "age" : 16, "sex" : "m" }
+{ "name" : "Lei", "age" : 17, "sex" : "m" }
+{ "name" : "八戒", "age" : 17, "sex" : "m" }
+{ "name" : "阿刁", "age" : 27 }
+{ "name" : "Lily", "age" : 16, "sex" : "m" }
+{ "name" : "阿花", "age" : 18, "sex" : "w" }
+
+db.class1.insert({name:'Lily',age:12,score:[89,76,58]})
+db.class1.insert({name:'Lucy',age:13,score:[89,76,58]})
+db.class1.insert({name:'Tom',age:12,score:[92,88,78]})
+db.class1.insert({name:'Jame',age:12,score:[77,68,82]})
+db.class1.insert({name:'Abby',age:12,score:[74,88,72]})
+
+{ "name" : "Lily", "age" : 12, "score" : [ 89, 76, 58 ] }
+{ "name" : "Lucy", "age" : 13, "score" : [ 89, 76, 58 ] }
+{ "name" : "Tom", "age" : 12, "score" : [ 92, 88, 78 ] }
+{ "name" : "Jame", "age" : 12, "score" : [ 77, 68, 82 ] }
+{ "name" : "Abby", "age" : 12, "score" : [ 74, 88, 72 ] }
